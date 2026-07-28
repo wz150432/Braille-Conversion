@@ -26,17 +26,22 @@ def build(version=None):
     print(f'=== Braille Converter v{version} 构建开始 ===')
 
     # 清理旧构建
-    for d in ['build', 'build_temp', 'dist', 'dist_new']:
+    for d in ['build', 'build_temp']:
         path = os.path.join(ROOT_DIR, d)
         if os.path.exists(path):
             shutil.rmtree(path, ignore_errors=True)
 
-    # 运行 PyInstaller
+    # releases/vX.Y.Z/ 作为输出目录
+    release_dir = os.path.join(ROOT_DIR, 'releases', f'v{version}')
+    os.makedirs(release_dir, exist_ok=True)
+
+    # 运行 PyInstaller（--distpath 直接指向 release 目录）
     exe_name = f'BrailleConverter-v{version}'
     cmd = [
         sys.executable, '-m', 'PyInstaller',
         '--clean', '--onefile', '--windowed',
         '--name', exe_name,
+        '--distpath', release_dir,
         '--add-data', f'samples/test.txt{os.pathsep}.',
         '--add-data', f'samples/test.md{os.pathsep}.',
         '--hidden-import', 'src.converter.chinese_conv',
@@ -57,26 +62,13 @@ def build(version=None):
         print(result.stderr[-500:])
         sys.exit(1)
 
-    # 将 exe 复制到 releases/vX.Y.Z/
-    release_dir = os.path.join(ROOT_DIR, 'releases', f'v{version}')
-    os.makedirs(release_dir, exist_ok=True)
-
-    src_exe = os.path.join(ROOT_DIR, 'dist', f'{exe_name}.exe')
-    dst_exe = os.path.join(release_dir, f'{exe_name}.exe')
-
-    if os.path.exists(src_exe):
-        shutil.copy2(src_exe, dst_exe)
-        size_mb = os.path.getsize(dst_exe) / (1024 * 1024)
+    # 验证
+    final_exe = os.path.join(release_dir, f'{exe_name}.exe')
+    if os.path.exists(final_exe):
+        size_mb = os.path.getsize(final_exe) / (1024 * 1024)
         print(f'✅ 构建成功: releases/v{version}/{exe_name}.exe ({size_mb:.1f} MB)')
     else:
-        print(f'⚠  exe 未找到: {src_exe}')
-        print('   请在 dist/ 中手动复制到 releases/')
-
-    # 清理临时构建目录
-    for d in ['build', 'build_temp']:
-        path = os.path.join(ROOT_DIR, d)
-        if os.path.exists(path):
-            shutil.rmtree(path, ignore_errors=True)
+        print(f'⚠  exe 未找到: {final_exe}')
 
     print(f'=== 完成 ===')
 

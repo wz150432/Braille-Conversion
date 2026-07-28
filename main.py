@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 def main():
     from PySide6.QtWidgets import QApplication
+    from PySide6.QtGui import QIcon
     from src.gui.main_window import MainWindow
 
     app = QApplication(sys.argv)
@@ -42,8 +43,18 @@ def main():
     app.setApplicationVersion(__version__)
     app.setStyle('Fusion')
 
+    # 设置图标（打包后 VERSION 和 icon.ico 都在 MEIPASS）
+    icon_path = os.path.join(BASE_DIR, 'resources', 'icon.ico')
+    if not os.path.isfile(icon_path):
+        icon_path = os.path.join(BASE_DIR, 'icon.ico')
+    if os.path.isfile(icon_path):
+        app_icon = QIcon(icon_path)
+        app.setWindowIcon(app_icon)
+
     window = MainWindow()
     window.setWindowTitle(f"Braille 转换阅读器 v{__version__}")
+    if app.windowIcon() and not app.windowIcon().isNull():
+        window.setWindowIcon(app.windowIcon())
     window.show()
 
     if len(sys.argv) > 1:
