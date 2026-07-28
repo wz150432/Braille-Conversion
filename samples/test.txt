@@ -1,0 +1,15 @@
+这是一个 Braille 转换测试文件。
+
+中文部分：
+你好，世界！这是一个测试。
+今天天气真好。
+
+English part:
+Hello World! This is a test.
+Braille converter works great.
+
+数学公式：
+行内公式 $E=mc^2$ 和独立公式 $$\frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$
+
+混合内容：
+数学之美 $x^2 + y^2 = z^2$ 在于简洁。

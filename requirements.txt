@@ -1,0 +1,10 @@
+PySide6>=6.5.0
+pypinyin>=0.55.0
+chardet>=5.0.0
+pytest>=7.0.0
+
+# liblouis — 英文 Grade 2 盲文翻译表
+# 如需英文 Grade 2 支持，安装 liblouis Python 绑定:
+#   apt install liblouis-dev liblouis-data
+#   pip install liblouis
+# 若无此依赖，英文转换自动降级为基本字母映射
