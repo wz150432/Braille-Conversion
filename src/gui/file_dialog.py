@@ -13,9 +13,10 @@ logger = logging.getLogger(__name__)
 
 # 支持的文件格式（第一项为默认，包含所有支持格式）
 SUPPORTED_EXTENSIONS = [
-    "所有支持的文档 (*.txt *.md *.markdown *.rst)",
+    "所有支持的文档 (*.txt *.md *.markdown *.rst *.tex *.ltx)",
     "文本文件 (*.txt)",
     "Markdown (*.md *.markdown)",
+    "LaTeX (*.tex *.ltx)",
     "所有文件 (*.*)",
 ]
 SUPPORTED_EXTENSIONS_FILTER = ";;".join(SUPPORTED_EXTENSIONS)
@@ -25,7 +26,7 @@ MAX_FILE_SIZE = 10 * 1024 * 1024
 
 
 def open_file_dialog(parent: Optional[QWidget] = None) -> Optional[str]:
-    """打开文件选择对话框，让用户选择一个 .txt 文件。
+    """打开文件选择对话框，让用户选择一个支持的文本文件。
 
     Args:
         parent: 父窗口。
@@ -108,7 +109,7 @@ class FileDropHandler:
     def is_supported_file(path: str) -> bool:
         """检查是否为支持的文件格式。"""
         ext = os.path.splitext(path)[1].lower()
-        return ext in ('.txt', '.md', '.markdown', '.rst')
+        return ext in ('.txt', '.md', '.markdown', '.rst', '.tex', '.ltx')
 
     @staticmethod
     def get_dropped_file_path(event) -> Optional[str]:

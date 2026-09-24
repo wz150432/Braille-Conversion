@@ -7,7 +7,7 @@ LaTeX 数学表达式 → Nemeth Code 盲文转换模块
   - 上下标 ^ 和 _
   - 求和 \\sum、积分 \\int、根号 \\sqrt
   - 希腊字母
-  - 未知 LaTeX 命令保留原文作 fallback
+  - 未知 LaTeX 命令降级为盲文占位符
 
 Nemeth Code 参考：
   - 数字指示符: ⠼ (dots 3-4-5-6)
@@ -27,6 +27,15 @@ import logging
 from typing import List, Tuple
 
 logger = logging.getLogger(__name__)
+_PLACEHOLDER = '⠿'
+
+
+def _sanitize_braille(text: str) -> str:
+    """Replace unsupported non-whitespace characters with a Braille placeholder."""
+    return ''.join(
+        ch if ch.isspace() or ('\u2800' <= ch <= '\u28ff') else _PLACEHOLDER
+        for ch in text
+    )
 
 # ── Nemeth Code 符号映射 ─────────────────────────────────────────
 
@@ -47,6 +56,18 @@ _NEMETH_SYMBOLS = {
     ']': '⠐⠶⠄',
     '{': '⠐⠷',
     '}': '⠐⠾',
+    '|': '⠐⠶',
+    ',': '⠂',
+    ':': '⠒',
+    ';': '⠆',
+    '!': '⠖',
+    '?': '⠦',
+    '#': '⠼⠼',
+    '&': '⠈⠯',
+    '*': '⠐⠔',
+    '~': '⠈⠔',
+    '@': '⠈⠁',
+    '%': '⠼⠉',
     # Nemeth 特殊
     'NEMETH_FRAC_START': '⠐⠣',
     'NEMETH_FRAC_LINE': '⠐⠤',
@@ -138,6 +159,45 @@ _NEMETH_COMMANDS = {
     'ln': '⠇⠝',
     'lim': '⠇⠊⠍',
     'to': '⠐⠒',
+    # 常见 LaTeX 符号和论文自定义字母宏
+    'ell': '⠇',
+    'eps': '⠑',
+    'dint': '⠙',
+    'dis': '⠙',
+    'R': '⠠⠗',
+    'N': '⠠⠝',
+    'C': '⠠⠉',
+    'E': '⠠⠑',
+    'P': '⠠⠏',
+    'S': '⠠⠎',
+    'K': '⠠⠅',
+    'Sc': '⠠⠎',
+    'Pro': '⠠⠏',
+    '{': '⠐⠷',
+    '}': '⠐⠾',
+    '[': '⠐⠶',
+    ']': '⠐⠶⠄',
+    '|': '⠐⠶',
+    'setminus': '⠐⠤',
+    'varnothing': '⠐⠕',
+    'exp': '⠑⠭⠏',
+    'sup': '⠎⠥⠏',
+    'inf': '⠊⠝⠋',
+    'max': '⠍⠁⠭',
+    'min': '⠍⠊⠝',
+    'wedge': '⠈⠩',
+    'vee': '⠈⠬',
+    'circ': '⠐⠄',
+    'star': '⠐⠔',
+    'otimes': '⠈⠿',
+    'oplus': '⠈⠖',
+    'langle': '⠨⠷',
+    'rangle': '⠨⠾',
+    '\\\\': ' ',
+    'label': '',
+    'tag': '',
+    'nonumber': '',
+    'notag': '',
 }
 
 # ── LaTeX 解析器 ─────────────────────────────────────────────────
@@ -311,7 +371,7 @@ class NemethConverter:
             if ch in _NEMETH_SYMBOLS:
                 return _NEMETH_SYMBOLS[ch]
             else:
-                return ch
+                return _PLACEHOLDER
 
         # 未知类型跳过
         return self.advance().value
@@ -344,9 +404,16 @@ class NemethConverter:
 
         # 分式 \frac{a}{b}
         if cmd == '\\frac':
-            num = self._parse_braced_group()
-            # 分式线
-            den = self._parse_braced_group()
+            # `\frac 12` uses two single-token arguments; our tokenizer
+            # otherwise reads the digits as one number token.
+            if self.peek().type == Token.NUMBER and len(self.peek().value) > 1:
+                digits = self.advance().value
+                num = self._number_to_nemeth(digits[0])
+                den = self._number_to_nemeth(digits[1:])
+            else:
+                num = self._parse_single_or_group()
+                # 分式线
+                den = self._parse_single_or_group()
             return (_NEMETH_SYMBOLS['NEMETH_FRAC_START'] + num +
                     _NEMETH_SYMBOLS['NEMETH_FRAC_LINE'] + den +
                     _NEMETH_SYMBOLS['NEMETH_FRAC_END'])
@@ -359,15 +426,47 @@ class NemethConverter:
                 self.advance()  # consume [
                 n = self._parse_until(']')
                 self.advance()  # consume ]
-                radicand = self._parse_braced_group()
+                radicand = self._parse_single_or_group()
                 return (_NEMETH_SYMBOLS['NEMETH_SQRT_START'] +
                         n + _NEMETH_SYMBOLS['NEMETH_SUP'] + radicand +
                         _NEMETH_SYMBOLS['NEMETH_SQRT_END'])
             else:
-                radicand = self._parse_braced_group()
+                radicand = self._parse_single_or_group()
                 return (_NEMETH_SYMBOLS['NEMETH_SQRT_START'] +
                         radicand +
                         _NEMETH_SYMBOLS['NEMETH_SQRT_END'])
+
+        # 尺寸和左右定界符只影响排版，不改变公式内容。
+        if cmd in (
+            '\\left', '\\right',
+            '\\big', '\\Big', '\\bigg', '\\Bigg',
+            '\\bigl', '\\bigr', '\\Bigl', '\\Bigr',
+            '\\biggl', '\\biggr', '\\Biggl', '\\Biggr',
+        ):
+            return ''
+
+        # LaTeX 环境和文档元数据不进入数学内容。
+        if cmd in ('\\begin', '\\end'):
+            if self.peek().type == Token.LBRACE:
+                self._parse_braced_group()
+            return ''
+        if cmd in ('\\label', '\\tag', '\\nonumber', '\\notag'):
+            if self.peek().type == Token.LBRACE:
+                self._parse_braced_group()
+            return ''
+
+        # 空白/间距命令在盲文输出中保留为普通空格。
+        if cmd in ('\\,', '\\;', '\\:', '\\!', '\\quad', '\\qquad'):
+            return ' '
+
+        # 字体和文本包装命令直接解析其参数。
+        if cmd in (
+            '\\mathbb', '\\mathbf', '\\boldsymbol', '\\bm', '\\pmb',
+            '\\mathrm', '\\operatorname', '\\mathcal', '\\mathscr',
+            '\\mathfrak', '\\text', '\\textrm', '\\textbf', '\\textit',
+            '\\emph',
+        ):
+            return self._parse_single_or_group()
 
         # 上下标跟在命令后（如 \sum_{i=1}^{n}）
         if cmd in ('\\sum', '\\prod', '\\int', '\\iint', '\\iiint', '\\oint',
@@ -390,9 +489,9 @@ class NemethConverter:
         if cmd[1:] in _NEMETH_COMMANDS:
             return _NEMETH_COMMANDS[cmd[1:]]
 
-        # 未知命令：保留原文作为 fallback
-        logger.debug("未知 LaTeX 命令: %s，保留原文", cmd)
-        return cmd
+        # 未知命令：降级为盲文占位符，避免输出 ASCII。
+        logger.debug("未知 LaTeX 命令: %s，降级为占位符", cmd)
+        return _PLACEHOLDER
 
     def _parse_superscript(self) -> str:
         """解析上标 ^..."""
@@ -416,6 +515,11 @@ class NemethConverter:
     def _parse_number(self) -> str:
         """解析数字（带数字指示符 ⠼，后面跟 Braille 数字 a-j）。"""
         num = self.advance().value
+        return self._number_to_nemeth(num)
+
+    @staticmethod
+    def _number_to_nemeth(num: str) -> str:
+        """将 ASCII 数字转换为带数字指示符的 Nemeth 数字。"""
         # 每个 ASCII 数字转为 Braille 数字
         braille_digits = ''.join(_DIGIT_TO_BRAILLE.get(ch, ch) for ch in num)
         return _NEMETH_SYMBOLS['NEMETH_NUM'] + braille_digits
@@ -439,8 +543,41 @@ class NemethConverter:
 
 # ── 公开 API ──────────────────────────────────────────────────────
 
-_INLINE_MATH_RE = re.compile(r'\$([^$]+)\$')
-_DISPLAY_MATH_RE = re.compile(r'\$\$([^$]+)\$\$')
+_MATH_SEGMENT_RE = re.compile(
+    r'\\begin\{(equation\*?|align\*?|gather\*?|multline\*?)\}'
+    r'(.*?)\\end\{\1\}'
+    r'|\\\[(.+?)\\\]'
+    r'|\\\((.+?)\\\)'
+    r'|\$\$(.+?)\$\$'
+    r'|\$(.+?)\$',
+    re.DOTALL,
+)
+
+
+def _math_match_parts(match: re.Match) -> Tuple[str, str]:
+    """Return (math kind, expression) for a recognized math segment."""
+    if match.group(1) is not None:
+        return ('display', match.group(2))
+    if match.group(3) is not None:
+        return ('display', match.group(3))
+    if match.group(4) is not None:
+        return ('inline', match.group(4))
+    if match.group(5) is not None:
+        return ('display', match.group(5))
+    return ('inline', match.group(6))
+
+
+def find_math_segments(text: str) -> List[Tuple[int, int, str, str]]:
+    """Find supported math segments with their source positions.
+
+    Returns:
+        List[(start, end, kind, expression)].
+    """
+    segments: List[Tuple[int, int, str, str]] = []
+    for match in _MATH_SEGMENT_RE.finditer(text):
+        kind, expression = _math_match_parts(match)
+        segments.append((match.start(), match.end(), kind, expression))
+    return segments
 
 
 def extract_math_segments(text: str) -> List[Tuple[str, str]]:
@@ -455,20 +592,7 @@ def extract_math_segments(text: str) -> List[Tuple[str, str]]:
           expr = 去掉分隔符后的 LaTeX 表达式
         按在原文中出现顺序返回。
     """
-    segments: List[Tuple[str, str]] = []
-    pos = 0
-    # 先匹配 $$（优先级高），再匹配 $
-    combined = re.finditer(
-        r'\$\$(.+?)\$\$|\$(.+?)\$',
-        text,
-        re.DOTALL
-    )
-    for m in combined:
-        if m.group(1) is not None:
-            segments.append(('display', m.group(1)))
-        else:
-            segments.append(('inline', m.group(2)))
-    return segments
+    return [(kind, expression) for _, _, kind, expression in find_math_segments(text)]
 
 
 def latex_to_nemeth(latex_str: str) -> str:
@@ -486,11 +610,10 @@ def latex_to_nemeth(latex_str: str) -> str:
     try:
         tokens = tokenize_latex(latex_str)
         converter = NemethConverter(tokens)
-        return converter.convert()
+        return _sanitize_braille(converter.convert())
     except Exception as e:
         logger.error("LaTeX→Nemeth 转换失败: %s, 输入: %r", e, latex_str)
-        # 降级：保留原文
-        return latex_str
+        return _sanitize_braille(latex_str)
 
 
 def inline_to_nemeth(latex_inline: str) -> str:
@@ -507,21 +630,11 @@ def convert_text_with_math(text: str) -> str:
     Returns:
         数学片段被替换后的文本。
     """
-    result = text
-
-    # 先替换 $$...$$ (显示数学)
-    result = re.sub(
-        r'\$\$(.+?)\$\$',
-        lambda m: latex_to_nemeth(m.group(1)),
-        result,
-        flags=re.DOTALL
-    )
-
-    # 再替换 $...$ (行内数学)
-    result = re.sub(
-        r'\$(.+?)\$',
-        lambda m: latex_to_nemeth(m.group(1)),
-        result
-    )
-
-    return result
+    parts: List[str] = []
+    last_end = 0
+    for start, end, _, expression in find_math_segments(text):
+        parts.append(text[last_end:start])
+        parts.append(latex_to_nemeth(expression))
+        last_end = end
+    parts.append(text[last_end:])
+    return ''.join(parts)

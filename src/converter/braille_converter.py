@@ -15,7 +15,7 @@ from typing import List
 
 from src.converter.chinese_conv import chinese_to_braille, is_chinese_char
 from src.converter.english_conv import english_to_braille
-from src.converter.math_conv import extract_math_segments, latex_to_nemeth
+from src.converter.math_conv import find_math_segments, latex_to_nemeth
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +69,10 @@ _MD_ORDERED_LIST_RE = re.compile(r'^\d+[.、]\s+')
 _MD_BOLD_ITALIC_RE = re.compile(r'\*{1,3}([^*]+)\*{1,3}')
 _MD_CODE_RE = re.compile(r'`([^`]+)`')
 _MD_LINK_RE = re.compile(r'\[([^\]]+)\]\([^)]+\)')
+_TEX_MATH_START_RE = re.compile(
+    r'\\\(|\\\[|'
+    r'\\begin\{(?:equation\*?|align\*?|gather\*?|multline\*?)\}'
+)
 
 
 def _emit_braille_number(digits: str) -> List[str]:
@@ -139,7 +143,7 @@ def _classify_line(line: str) -> str:
     stripped = line.strip()
     if not stripped:
         return BLOCK_EMPTY
-    if '$' in stripped:
+    if '$' in stripped or _TEX_MATH_START_RE.search(stripped):
         return BLOCK_MATH
     chinese_count = sum(1 for ch in stripped if is_chinese_char(ch))
     english_count = sum(1 for ch in stripped if ch.isascii() and ch.isalpha())
@@ -208,21 +212,19 @@ def _convert_english_block(text: str) -> List[str]:
 def _convert_math_block(text: str) -> List[str]:
     """转换含数学公式的文本块。
 
-    按 $...$ / $$...$$ 切分：数学段走 latex_to_nemeth，
+    按常见 LaTeX 数学定界符切分：数学段走 latex_to_nemeth，
     非数学段走 _convert_text_segment。
     """
-    pattern = re.compile(r'\$\$(.+?)\$\$|\$(.+?)\$', re.DOTALL)
     result: List[str] = []
     last_end = 0
 
-    for m in pattern.finditer(text):
-        if m.start() > last_end:
-            plain = text[last_end:m.start()]
+    for start, end, _, math_expr in find_math_segments(text):
+        if start > last_end:
+            plain = text[last_end:start]
             result.extend(_convert_text_segment(plain))
-        math_expr = m.group(1) or m.group(2)
         nemeth = latex_to_nemeth(math_expr)
         result.append(nemeth)
-        last_end = m.end()
+        last_end = end
 
     if last_end < len(text):
         plain = text[last_end:]
@@ -423,4 +425,8 @@ def convert_text(text: str, toned: bool = False) -> List[str]:
     while result and result[-1] == BRAILLE_SPACE:
         result.pop()
 
-    return result
+    # 最终出口统一保证：除空白外，所有字符都是 Unicode 盲文。
+    return [
+        ch if ch.isspace() or ('\u2800' <= ch <= '\u28ff') else PLACEHOLDER
+        for ch in result
+    ]

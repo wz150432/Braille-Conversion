@@ -1,8 +1,8 @@
 """
 英文文本 → 盲文 Grade 2 转换模块
 
-基于 liblouis C 库 (ctypes 调用 liblouis.dll)，使用 UEB (Unified English Braille)
-en-ueb-g2.ctb 翻译表。
+基于 liblouis C 库（ctypes 调用当前平台动态库），使用 UEB
+(Unified English Braille) en-ueb-g2.ctb 翻译表。
 
 liblouis 输出 ASCII 点字表示，再通过 text_nabcc.dis 映射表转为 Unicode Braille。
 """
@@ -11,7 +11,9 @@ import re
 import os
 import sys
 import ctypes
+import glob
 import logging
+from ctypes.util import find_library
 from typing import List, Optional, Dict
 
 logger = logging.getLogger(__name__)
@@ -25,7 +27,7 @@ def _find_liblouis_dir() -> str:
     if getattr(sys, 'frozen', False):
         # PyInstaller: --add-data 把文件放在 MEIPASS 下
         # tables/ 在 liblouis_win/share/liblouis/tables/
-        # liblouis.dll 在根目录
+        # Windows 打包时 liblouis.dll 在根目录
         return sys._MEIPASS
 
     candidates = [
@@ -47,29 +49,94 @@ _LOUIS_DIR = ''
 _LOUIS_DLL: Optional[ctypes.CDLL] = None
 
 
+def _find_tables_dir() -> str:
+    """找到 liblouis 翻译表目录，兼容打包目录和系统安装目录。"""
+    env_path = os.environ.get('LIBLOUIS_TABLES_DIR', '')
+    if env_path and os.path.isdir(env_path):
+        return env_path
+
+    candidates = []
+    if _LOUIS_DIR:
+        if getattr(sys, 'frozen', False):
+            candidates.append(os.path.join(
+                _LOUIS_DIR, 'liblouis_win', 'share', 'liblouis', 'tables'
+            ))
+        candidates.extend([
+            os.path.join(_LOUIS_DIR, 'share', 'liblouis', 'tables'),
+            os.path.join(_LOUIS_DIR, 'tables'),
+        ])
+
+    candidates.extend([
+        '/usr/share/liblouis/tables',
+        '/usr/local/share/liblouis/tables',
+        '/opt/homebrew/share/liblouis/tables',
+        '/opt/local/share/liblouis/tables',
+    ])
+    for candidate in candidates:
+        candidate = os.path.abspath(candidate)
+        if os.path.isdir(candidate):
+            return candidate
+    return ''
+
+
 def _load_liblouis() -> Optional[ctypes.CDLL]:
-    """加载 liblouis DLL 并设置函数签名。"""
+    """加载当前平台可用的 liblouis 动态库并设置函数签名。"""
     global _LOUIS_DIR, _LOUIS_DLL
 
     if _LOUIS_DLL is not None:
         return _LOUIS_DLL
 
     _LOUIS_DIR = _find_liblouis_dir()
-    if not _LOUIS_DIR:
-        logger.warning("找不到 liblouis 目录")
-        return None
+    candidates = []
 
-    dll_path = os.path.join(_LOUIS_DIR, 'bin', 'liblouis.dll')
-    if not os.path.isfile(dll_path):
-        dll_path = os.path.join(_LOUIS_DIR, 'liblouis.dll')
-    if not os.path.isfile(dll_path):
-        logger.warning("找不到 liblouis.dll，已搜索: %s", _LOUIS_DIR)
-        return None
+    # Windows 使用打包的 DLL；其他平台使用系统动态库或显式配置的库。
+    if os.name == 'nt' and _LOUIS_DIR:
+        candidates.extend([
+            os.path.join(_LOUIS_DIR, 'bin', 'liblouis.dll'),
+            os.path.join(_LOUIS_DIR, 'liblouis.dll'),
+        ])
 
-    try:
-        dll = ctypes.CDLL(dll_path)
-    except OSError as e:
-        logger.warning("加载 liblouis.dll 失败: %s", e)
+    configured_library = os.environ.get('LIBLOUIS_LIBRARY', '')
+    if configured_library:
+        candidates.append(configured_library)
+
+    system_library = find_library('louis')
+    if system_library:
+        candidates.append(system_library)
+
+    if _LOUIS_DIR:
+        candidates.extend(glob.glob(os.path.join(_LOUIS_DIR, 'liblouis.so*')))
+        candidates.extend(glob.glob(os.path.join(_LOUIS_DIR, 'liblouis.dylib*')))
+        candidates.extend(glob.glob(os.path.join(_LOUIS_DIR, 'lib', 'liblouis.so*')))
+
+    if os.name != 'nt':
+        candidates.extend([
+            '/usr/lib/liblouis.so',
+            '/usr/lib64/liblouis.so',
+            '/usr/local/lib/liblouis.so',
+            '/opt/homebrew/lib/liblouis.dylib',
+            '/opt/local/lib/liblouis.dylib',
+        ])
+
+    seen = set()
+    dll = None
+    for candidate in candidates:
+        if not candidate or candidate in seen:
+            continue
+        seen.add(candidate)
+
+        # A bare name is a loader search-path entry; a path must exist.
+        is_path = os.path.isabs(candidate) or os.path.sep in candidate
+        if is_path and not os.path.isfile(candidate):
+            continue
+        try:
+            dll = ctypes.CDLL(candidate)
+            break
+        except OSError as e:
+            logger.debug("尝试加载 liblouis 失败 %s: %s", candidate, e)
+
+    if dll is None:
+        logger.warning("找不到可用的 liblouis 动态库")
         return None
 
     # Windows 版 liblouis 使用 32-bit widechar (unsigned int)
@@ -101,12 +168,11 @@ def _load_dots_mapping() -> None:
     if _DOTS_MAPPING_LOADED:
         return
 
-    if getattr(sys, 'frozen', False):
-        tables_dir = os.path.join(_LOUIS_DIR, 'liblouis_win', 'share', 'liblouis', 'tables')
-    else:
-        tables_dir = os.path.join(_LOUIS_DIR, 'share', 'liblouis', 'tables')
-        if not os.path.isdir(tables_dir):
-            tables_dir = os.path.join(_LOUIS_DIR, 'tables')
+    tables_dir = _find_tables_dir()
+    if not tables_dir:
+        logger.warning("找不到 liblouis 翻译表目录")
+        _DOTS_MAPPING_LOADED = True
+        return
 
     for fname in ['text_nabcc.dis', 'spaces.uti']:
         fpath = os.path.join(tables_dir, fname)
@@ -168,13 +234,7 @@ _LOUIS_AVAILABLE: Optional[bool] = None
 
 def _get_table_path() -> str:
     """返回 en-ueb-g2.ctb 的绝对路径。"""
-    if getattr(sys, 'frozen', False):
-        # PyInstaller: tables at liblouis_win/share/liblouis/tables/
-        tables_dir = os.path.join(_LOUIS_DIR, 'liblouis_win', 'share', 'liblouis', 'tables')
-    else:
-        tables_dir = os.path.join(_LOUIS_DIR, 'share', 'liblouis', 'tables')
-        if not os.path.isdir(tables_dir):
-            tables_dir = os.path.join(_LOUIS_DIR, 'tables')
+    tables_dir = _find_tables_dir()
     return os.path.join(tables_dir, _TABLE_NAME)
 
 

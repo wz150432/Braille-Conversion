@@ -40,6 +40,12 @@ class TestBrailleConverter:
         result = convert_text(r'公式 $$\frac{1}{2}$$ 测试')
         assert len(result) >= 3
 
+    def test_with_tex_math_environment(self):
+        """LaTeX 公式环境按数学块转换。"""
+        source = r'\begin{equation}x+y\end{equation}'
+        result = convert_text(source)
+        assert len(result) >= 1
+
     def test_newlines(self):
         """含换行符。"""
         result = convert_text('第一行\n第二行')
@@ -75,6 +81,12 @@ Hello world! 你好
         """特殊字符。"""
         result = convert_text('@#$%^&*()')
         assert len(result) >= 1
+
+    def test_output_is_braille_only(self):
+        """总转换器输出除空白外必须全部是 Unicode 盲文。"""
+        source = r'正文 \unknowncommand 与 $x^2$ 和 \[y\]'
+        result = convert_text(source)
+        assert all(ch.isspace() or ('\u2800' <= ch <= '\u28ff') for ch in result)
 
     def test_long_text(self):
         """长文本性能测试。"""

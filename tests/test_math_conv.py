@@ -110,9 +110,32 @@ class TestLatexToNemeth:
         assert result
 
     def test_unknown_command(self):
-        """未知命令保留原文。"""
+        """未知命令降级为盲文占位符，避免输出非盲文字符。"""
         result = latex_to_nemeth(r'\unknowncommand')
-        assert 'unknowncommand' in result
+        assert result
+        assert all(ch.isspace() or ('\u2800' <= ch <= '\u28ff') for ch in result)
+
+    def test_math_output_is_braille_only(self):
+        """未支持的 LaTeX 宏不能泄漏 ASCII 到最终盲文。"""
+        result = latex_to_nemeth(r'\ell_p^N + \mathbb{R} + \Big\{x\Big\}')
+        assert all(ch.isspace() or ('\u2800' <= ch <= '\u28ff') for ch in result)
+
+    @pytest.mark.parametrize('source', [
+        r'\ell',
+        r'\mathbb{R}',
+        r'\mathbb R',
+        r't_{\mathrm{crit}}',
+        r'\Big\{x\Big\}',
+        r'\left( x \right)',
+        r'\,x\;',
+        r'\frac 12',
+        r'\sqrt 2',
+    ])
+    def test_common_latex_macros_without_placeholder(self, source):
+        """高频 LaTeX 宏应解析为盲文，而不是占位符。"""
+        result = latex_to_nemeth(source)
+        assert '⠿' not in result
+        assert all(ch.isspace() or ('\u2800' <= ch <= '\u28ff') for ch in result)
 
     def test_complex_expression(self):
         """复杂公式。"""
@@ -146,6 +169,20 @@ class TestExtractMathSegments:
         segments = extract_math_segments('纯文本内容')
         assert len(segments) == 0
 
+    def test_tex_delimiters(self):
+        """LaTeX 常用数学定界符。"""
+        segments = extract_math_segments(r'行内 \(x\)，显示 \[y\]')
+        assert [kind for kind, _ in segments] == ['inline', 'display']
+        assert segments[0][1] == 'x'
+        assert segments[1][1] == 'y'
+
+    def test_tex_environment(self):
+        """LaTeX 公式环境。"""
+        source = r'\begin{equation}x+y\end{equation}'
+        segments = extract_math_segments(source)
+        assert len(segments) == 1
+        assert segments[0] == ('display', 'x+y')
+
 
 class TestConvertTextWithMath:
     """含数学标记文本的全量转换测试。"""
@@ -159,3 +196,9 @@ class TestConvertTextWithMath:
         """显示数学替换。"""
         result = convert_text_with_math(r'$$\sum_{i=1}^{n}$$')
         assert '$$' not in result or result.count('$') < 4  # $$ 被替换
+
+    def test_tex_delimiter_replacement(self):
+        """LaTeX 数学定界符替换。"""
+        result = convert_text_with_math(r'值 \(\frac{1}{2}\)')
+        assert r'\(' not in result
+        assert r'\)' not in result

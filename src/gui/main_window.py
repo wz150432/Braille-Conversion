@@ -24,6 +24,7 @@ from PySide6.QtGui import (
 )
 
 from src.lazy_document import LazyBrailleDocument
+from src.reading_progress import ReadingProgressStore
 from src.gui.braille_canvas import BrailleCanvas
 from src.gui.file_dialog import (
     open_file_dialog, read_file_content, FileDropHandler
@@ -116,6 +117,7 @@ class MainWindow(QMainWindow):
         self._is_loading: bool = False
         self._toned: bool = True
         self._theme: int = THEME_SYSTEM
+        self._reading_progress = ReadingProgressStore()
 
         self._setup_menubar()
         self._setup_ui()
@@ -235,9 +237,15 @@ class MainWindow(QMainWindow):
         if path:
             self._load_file(path)
 
-    def _load_file(self, file_path: str, target_page: int = 0):
+    def _load_file(self, file_path: str, target_page: Optional[int] = None):
         if self._is_loading:
             return
+        if self._current_file and self._doc is not None:
+            self._reading_progress.set_page(self._current_file, self._current_page)
+        if target_page is None:
+            target_page = self._reading_progress.get_page(file_path)
+        if target_page is None:
+            target_page = 0
         self._is_loading = True
         self._current_file = file_path
         self._current_page = target_page
@@ -267,6 +275,7 @@ class MainWindow(QMainWindow):
             self._status_label.setText("文件为空")
             self._canvas.clear()
             self._doc = None
+            self._reading_progress.clear(file_path)
             self._update_ui_state()
             return
 
@@ -321,6 +330,8 @@ class MainWindow(QMainWindow):
         self._display_page(self._current_page, rows)
 
     def _display_page(self, page_num: int, rows: list):
+        if self._current_file:
+            self._reading_progress.set_page(self._current_file, page_num)
         self._canvas.set_lines(rows, f"{page_num + 1} / {self._total_pages}")
         self._page_label.setText(f"{page_num + 1} / {self._total_pages}")
         fname = os.path.basename(self._current_file or "")
@@ -371,6 +382,11 @@ class MainWindow(QMainWindow):
         if self._current_file:
             saved_page = self._current_page
             self._load_file(self._current_file, target_page=saved_page)
+
+    def closeEvent(self, event):
+        if self._current_file and self._doc is not None:
+            self._reading_progress.set_page(self._current_file, self._current_page)
+        super().closeEvent(event)
 
     # ── 主题 ──────────────────────────────────────────────────────
 

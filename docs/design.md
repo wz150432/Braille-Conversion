@@ -13,7 +13,7 @@
 |------|------|
 | GUI 框架 | PySide6 (Qt for Python) |
 | 中文→盲文 | pypinyin >= 0.55.0（Style.BRAILLE_MAINLAND / BRAILLE_MAINLAND_TONE） |
-| 英文 Grade 2 → 盲文 | liblouis Python 绑定（louis 包） |
+| 英文 Grade 2 → 盲文 | liblouis C 库（ctypes 按平台加载动态库） |
 | LaTeX 数学→Nemeth Code | 自研模块（基于 Nemeth Code 规则表） |
 | 打包分发 | PyInstaller（--onefile --windowed） |
 | 测试 | pytest |
@@ -127,8 +127,9 @@ Nemeth Code 数字前加 ⠼（numeric indicator），字母保持原样。
 - 每行 Braille 字符数：根据窗口宽度自适应（默认 ~40 字）
 
 **文件格式支持：**
-- 初始：UTF-8 .txt
-- 可扩展：.docx、.srt 等
+- 当前支持：UTF-8 `.txt`、`.md`、`.markdown`、`.rst`
+- LaTeX 源文件：`.tex`、`.ltx`（按文本读取，数学片段进入 Nemeth 转换）
+- 未来可扩展：`.docx`、`.epub`、`.srt` 等
 
 ## 五、分页机制
 
@@ -151,10 +152,10 @@ Paginator(braille_chars: list[str], chars_per_line: int, lines_per_page: int)
 | 不支持字符 | 替换为 ⠿（占位符），状态栏提示 |
 | 纯英文文件 | 自动识别，全程走 EnglishConv，结果正确 |
 | 窗口缩放 | 画布重排 + 重新分页，保持当前阅读位置 |
-| liblouis 表缺失 | 降级仅用英文规则，弹窗警告 |
+| liblouis 表缺失 | 降级仅用英文规则，记录日志警告 |
 | 打包后资源路径 | 通过 sys._MEIPASS 处理路径兼容 |
 | 数学表达式内的中英文 | 数学模式下只处理 LaTeX 数学符号，嵌套文本视为常量 |
-| 非标准/自定义 LaTeX 宏 | 保留原文 LaTeX 源码作为 fallback，提示未翻译 |
+| 非标准/自定义 LaTeX 宏 | 降级为 ⠿ 盲文占位符，避免输出非盲文字符 |
 
 ## 七、项目文件结构
 

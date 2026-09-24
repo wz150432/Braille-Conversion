@@ -3,8 +3,9 @@ pypinyin>=0.55.0
 chardet>=5.0.0
 pytest>=7.0.0
 
-# liblouis — 英文 Grade 2 盲文翻译表
-# 如需英文 Grade 2 支持，安装 liblouis Python 绑定:
+# liblouis — 英文 Grade 2 盲文翻译
+# 通过 ctypes 加载当前平台的动态库，不需要安装 Python louis 包。
+# Debian/Ubuntu:
 #   apt install liblouis-dev liblouis-data
-#   pip install liblouis
-# 若无此依赖，英文转换自动降级为基本字母映射
+# 也可以通过 LIBLOUIS_LIBRARY、LIBLOUIS_TABLES_DIR 指定库和翻译表。
+# 找不到 liblouis 时，英文转换自动降级为基本字母映射。

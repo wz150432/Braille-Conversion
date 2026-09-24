@@ -19,7 +19,7 @@
 ### 任务 1.1：创建项目目录结构和配置文件
 - 创建目录：`src/`、`src/gui/`、`src/converter/`、`tests/`、`resources/liblouis_tables/`
 - 创建 `src/__init__.py`、`src/gui/__init__.py`、`src/converter/__init__.py`
-- 创建 `requirements.txt`（依赖：PySide6、pypinyin>=0.55.0、liblouis、chardet、pytest）
+- 创建 `requirements.txt`（依赖：PySide6、pypinyin>=0.55.0、系统 liblouis、chardet、pytest）
 - 创建 `tests/__init__.py`
 
 ### 任务 1.2：实现中文 → 盲文（chinese_conv.py）
@@ -30,14 +30,14 @@
 
 ### 任务 1.3：实现英文 → 盲文 Grade 2（english_conv.py）
 - 调用 `louis.translateString()` 使用 `en-ueb-g2.utb` 表
-- 处理 liblouis 表缺失的降级（弹窗警告 + 仅基本英文字母映射）
+- 处理 liblouis 表缺失的降级（记录日志警告 + 仅基本英文字母映射）
 - 函数签名：`english_to_braille(text: str) -> list[str]`
 
 ### 任务 1.4：实现数学 LaTeX → Nemeth Code（math_conv.py）
 - 自研转换器，基于 Nemeth Code 规则表
 - 正则匹配 `$...$`（行内）和 `$$...$$`（独立段落）
 - 支持：分式 `\frac{}`、上下标 `^` `_`、求和 `\sum`、积分 `\int`、根号 `\sqrt`、希腊字母
-- 未知 LaTeX 命令保留原文作为 fallback
+- 未知 LaTeX 命令降级为盲文占位符
 - 函数签名：`latex_to_nemeth(latex_str: str) -> str`
 
 ### 任务 1.5：实现总调度器（braille_converter.py）
@@ -94,7 +94,7 @@
 
 ### 任务 3.3：数学转换测试（test_math_conv.py）
 - 行内 `$...$`、独立 `$$...$$`、分式、上下标、求和、积分、根号、希腊字母
-- 未知 LaTeX 命令的 fallback
+- 未知 LaTeX 命令的占位符降级
 
 ### 任务 3.4：分页器测试（test_paginator.py）
 - 正常分页、边界（不足一页、恰好一页）、空输入
