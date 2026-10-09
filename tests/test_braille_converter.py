@@ -74,8 +74,8 @@ Hello world! 你好
     def test_numbers_only(self):
         """纯数字。"""
         result = convert_text('12345')
-        # 数字会被原样保留或映射
-        assert len(result) == 5
+        # GF 0019—2018 附录 B：数字串前必须有数字标志符。
+        assert ''.join(result) == '⠼⠁⠃⠉⠙⠑'
 
     def test_special_chars(self):
         """特殊字符。"""

@@ -45,6 +45,7 @@ def build(version=None):
         '--add-data', f'samples/test.txt{os.pathsep}.',
         '--add-data', f'samples/test.md{os.pathsep}.',
         '--hidden-import', 'src.converter.chinese_conv',
+        '--collect-data', 'jieba',
         '--hidden-import', 'src.converter.english_conv',
         '--hidden-import', 'src.converter.math_conv',
         '--hidden-import', 'src.converter.braille_converter',

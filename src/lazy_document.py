@@ -7,9 +7,10 @@
 """
 
 import logging
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 from src.converter.braille_converter import convert_text
+from src.converter.chinese_rules import ChineseBrailleMode, resolve_mode
 from src.paginator import split_lines
 
 logger = logging.getLogger(__name__)
@@ -23,9 +24,10 @@ class LazyBrailleDocument:
         page = doc.get_page(0, chars_per_line=40, lines_per_page=10)
     """
 
-    def __init__(self, text: str, toned: bool = False):
+    def __init__(self, text: str, toned: Optional[bool] = None, *,
+                 mode: Optional[ChineseBrailleMode] = None):
         self._lines = text.split('\n') if text else []
-        self._toned = toned
+        self._chinese_mode = resolve_mode(toned, mode)
         self._cpl: int = 0
         self._lpp: int = 0
         # page_num → (rows, first_line_idx, last_line_idx)
@@ -91,7 +93,9 @@ class LazyBrailleDocument:
         line_idx = start_line
 
         while line_idx < len(self._lines):
-            buf.extend(convert_text(self._lines[line_idx], toned=self._toned))
+            if buf and buf[-1] != ' ':
+                buf.append(' ')  # 原文换行不能把前后两个词直接拼为连写单位。
+            buf.extend(convert_text(self._lines[line_idx], mode=self._chinese_mode))
             line_idx += 1
 
             rows = split_lines(buf, cpl)

@@ -19,11 +19,12 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtGui import (
-    QAction, QDragEnterEvent, QDropEvent,
+    QAction, QActionGroup, QDragEnterEvent, QDropEvent,
     QPalette, QColor,
 )
 
 from src.lazy_document import LazyBrailleDocument
+from src.converter.chinese_rules import ChineseBrailleMode
 from src.reading_progress import ReadingProgressStore
 from src.gui.braille_canvas import BrailleCanvas
 from src.gui.file_dialog import (
@@ -115,7 +116,7 @@ class MainWindow(QMainWindow):
         self._current_page: int = 0
         self._total_pages: int = 0
         self._is_loading: bool = False
-        self._toned: bool = True
+        self._chinese_mode = ChineseBrailleMode.STANDARD
         self._theme: int = THEME_SYSTEM
         self._reading_progress = ReadingProgressStore()
 
@@ -160,10 +161,23 @@ class MainWindow(QMainWindow):
         self._act_reload = QAction("重新载入\tCtrl+R", self)
         self._act_reload.setShortcut("Ctrl+R")
         view_menu.addAction(self._act_reload)
-        self._act_tone = QAction("中文带调", self)
-        self._act_tone.setCheckable(True)
-        self._act_tone.setChecked(True)  # 默认开启
-        view_menu.addAction(self._act_tone)
+        chinese_menu = view_menu.addMenu("中文盲文")
+        self._chinese_mode_group = QActionGroup(self)
+        self._chinese_mode_group.setExclusive(True)
+        self._chinese_mode_actions = {}
+        for mode, label, tip in (
+            (ChineseBrailleMode.STANDARD, "省写与简写（默认）", "按国家通用盲文规则省写声调，并使用规定的简写形式"),
+            (ChineseBrailleMode.TONE_REDUCED, "省写，不简写", "按规则省写声调，保留完整字形"),
+            (ChineseBrailleMode.FULL, "字字标调", "显示本调，不使用声调省写和定字简写；适合学习和校对"),
+        ):
+            action = QAction(label, self)
+            action.setCheckable(True)
+            action.setData(mode.value)
+            action.setToolTip(tip)
+            self._chinese_mode_group.addAction(action)
+            chinese_menu.addAction(action)
+            action.setChecked(mode == self._chinese_mode)
+            self._chinese_mode_actions[mode] = action
 
     # ── 布局 ────────────────────────────────────────────────────
 
@@ -203,7 +217,7 @@ class MainWindow(QMainWindow):
         self._act_next.triggered.connect(self._on_next_page)
         self._act_jump.triggered.connect(self._on_jump_page)
         self._act_reload.triggered.connect(self._on_reload)
-        self._act_tone.toggled.connect(self._on_tone_toggle)
+        self._chinese_mode_group.triggered.connect(self._on_chinese_mode_changed)
 
     # ── 事件 ──────────────────────────────────────────────────────
 
@@ -280,7 +294,7 @@ class MainWindow(QMainWindow):
             return
 
         try:
-            self._doc = LazyBrailleDocument(content, toned=self._toned)
+            self._doc = LazyBrailleDocument(content, mode=self._chinese_mode)
         except Exception as e:
             self._status_label.setText("创建文档失败")
             QMessageBox.critical(self, "错误", str(e))
@@ -377,8 +391,8 @@ class MainWindow(QMainWindow):
         if self._current_file:
             self._load_file(self._current_file)
 
-    def _on_tone_toggle(self, checked: bool):
-        self._toned = checked
+    def _on_chinese_mode_changed(self, action: QAction):
+        self._chinese_mode = ChineseBrailleMode(action.data())
         if self._current_file:
             saved_page = self._current_page
             self._load_file(self._current_file, target_page=saved_page)

@@ -1,0 +1,497 @@
+{
+  "native_available": true,
+  "summary": {
+    "chinese": {
+      "passed": 11,
+      "failed": 0
+    },
+    "english_native": {
+      "passed": 8,
+      "failed": 0
+    },
+    "english_fallback": {
+      "passed": 1,
+      "failed": 7
+    },
+    "math_nemeth": {
+      "passed": 32,
+      "failed": 0
+    }
+  },
+  "cases": [
+    {
+      "group": "chinese",
+      "source": "你的",
+      "actual": "⠝⠙",
+      "expected": "⠝⠙",
+      "rule": "11.1",
+      "passed": true
+    },
+    {
+      "group": "chinese",
+      "source": "他用",
+      "actual": "⠞⠔⠹",
+      "expected": "⠞⠔⠹",
+      "rule": "11.2",
+      "passed": true
+    },
+    {
+      "group": "chinese",
+      "source": "怎么样",
+      "actual": "⠵⠴⠄⠍⠢⠭",
+      "expected": "⠵⠴⠄⠍⠢⠭",
+      "rule": "11.2",
+      "passed": true
+    },
+    {
+      "group": "chinese",
+      "source": "慈爱",
+      "actual": "⠉⠂⠪",
+      "expected": "⠉⠂⠪",
+      "rule": "10.2.7",
+      "passed": true
+    },
+    {
+      "group": "chinese",
+      "source": "事业",
+      "actual": "⠱⠆⠑⠆",
+      "expected": "⠱⠆⠑⠆",
+      "rule": "10.2.7",
+      "passed": true
+    },
+    {
+      "group": "chinese",
+      "source": "问",
+      "actual": "⠒⠆",
+      "expected": "⠒⠆",
+      "rule": "10.2.8",
+      "passed": true
+    },
+    {
+      "group": "chinese",
+      "source": "再",
+      "actual": "⠵⠪⠆",
+      "expected": "⠵⠪⠆",
+      "rule": "10.2.8",
+      "passed": true
+    },
+    {
+      "group": "chinese",
+      "source": "在",
+      "actual": "⠵⠪",
+      "expected": "⠵⠪",
+      "rule": "10.2.3",
+      "passed": true
+    },
+    {
+      "group": "chinese",
+      "source": "地道",
+      "actual": "⠙⠊⠆⠙⠖⠆",
+      "expected": "⠙⠊⠆⠙⠖⠆",
+      "rule": "10.2.8",
+      "passed": true
+    },
+    {
+      "group": "chinese",
+      "source": "你的",
+      "actual": "⠝⠊⠄⠙⠢",
+      "expected": "⠝⠊⠄⠙⠢",
+      "rule": "10.1, 10.2",
+      "passed": true
+    },
+    {
+      "group": "chinese",
+      "source": "他 她 它",
+      "actual": "⠞⠔ ⠞⠔⠁ ⠈⠞⠔",
+      "expected": "⠞⠔ ⠞⠔⠁ ⠈⠞⠔",
+      "rule": "9.4, 10.1",
+      "passed": true
+    },
+    {
+      "group": "english_native",
+      "source": "hello",
+      "actual": "⠓⠑⠇⠇⠕",
+      "expected": "⠓⠑⠇⠇⠕",
+      "rule": "4",
+      "passed": true
+    },
+    {
+      "group": "english_native",
+      "source": "the",
+      "actual": "⠮",
+      "expected": "⠮",
+      "rule": "10.2",
+      "passed": true
+    },
+    {
+      "group": "english_native",
+      "source": "and",
+      "actual": "⠯",
+      "expected": "⠯",
+      "rule": "10.2",
+      "passed": true
+    },
+    {
+      "group": "english_native",
+      "source": "with",
+      "actual": "⠾",
+      "expected": "⠾",
+      "rule": "10.2",
+      "passed": true
+    },
+    {
+      "group": "english_native",
+      "source": "123",
+      "actual": "⠼⠁⠃⠉",
+      "expected": "⠼⠁⠃⠉",
+      "rule": "6",
+      "passed": true
+    },
+    {
+      "group": "english_native",
+      "source": "\"hello\"",
+      "actual": "⠦⠓⠑⠇⠇⠕⠴",
+      "expected": "⠦⠓⠑⠇⠇⠕⠴",
+      "rule": "7.6",
+      "passed": true
+    },
+    {
+      "group": "english_native",
+      "source": "can't",
+      "actual": "⠉⠄⠞",
+      "expected": "⠉⠄⠞",
+      "rule": "10.1.2",
+      "passed": true
+    },
+    {
+      "group": "english_native",
+      "source": "HELLO",
+      "actual": "⠠⠠⠓⠑⠇⠇⠕",
+      "expected": "⠠⠠⠓⠑⠇⠇⠕",
+      "rule": "8",
+      "passed": true
+    },
+    {
+      "group": "english_fallback",
+      "source": "hello",
+      "actual": "⠓⠑⠇⠇⠕",
+      "expected": "⠓⠑⠇⠇⠕",
+      "rule": "4",
+      "passed": true
+    },
+    {
+      "group": "english_fallback",
+      "source": "the",
+      "actual": "⠞⠓⠑",
+      "expected": "⠮",
+      "rule": "10.2",
+      "passed": false
+    },
+    {
+      "group": "english_fallback",
+      "source": "and",
+      "actual": "⠁⠝⠙",
+      "expected": "⠯",
+      "rule": "10.2",
+      "passed": false
+    },
+    {
+      "group": "english_fallback",
+      "source": "with",
+      "actual": "⠺⠊⠞⠓",
+      "expected": "⠾",
+      "rule": "10.2",
+      "passed": false
+    },
+    {
+      "group": "english_fallback",
+      "source": "123",
+      "actual": "⠼⠁⠼⠃⠼⠉",
+      "expected": "⠼⠁⠃⠉",
+      "rule": "6",
+      "passed": false
+    },
+    {
+      "group": "english_fallback",
+      "source": "\"hello\"",
+      "actual": "⠦⠓⠑⠇⠇⠕⠦",
+      "expected": "⠦⠓⠑⠇⠇⠕⠴",
+      "rule": "7.6",
+      "passed": false
+    },
+    {
+      "group": "english_fallback",
+      "source": "can't",
+      "actual": "⠉⠁⠝⠄⠞",
+      "expected": "⠉⠄⠞",
+      "rule": "10.1.2",
+      "passed": false
+    },
+    {
+      "group": "english_fallback",
+      "source": "HELLO",
+      "actual": "⠠⠓⠠⠑⠠⠇⠠⠇⠠⠕",
+      "expected": "⠠⠠⠓⠑⠇⠇⠕",
+      "rule": "8",
+      "passed": false
+    },
+    {
+      "group": "math_nemeth",
+      "source": "x",
+      "actual": "⠰⠭",
+      "expected": "⠰⠭",
+      "rule": "6.3.1; complete isolated mathematical expression",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "1+2",
+      "actual": "⠼⠂⠬⠆",
+      "expected": "⠼⠂⠬⠆",
+      "rule": "3.1.2, 3.3.1, 3.4, 20",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "3.14",
+      "actual": "⠼⠒⠨⠂⠲",
+      "expected": "⠼⠒⠨⠂⠲",
+      "rule": "3.2.3, example 3-6",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "a+b",
+      "actual": "⠁⠬⠃",
+      "expected": "⠁⠬⠃",
+      "rule": "20",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "a-b",
+      "actual": "⠁⠤⠃",
+      "expected": "⠁⠤⠃",
+      "rule": "20",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "x^2",
+      "actual": "⠭⠘⠆",
+      "expected": "⠭⠘⠆",
+      "rule": "14.4.1, example 14-3",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "x_a",
+      "actual": "⠭⠰⠁",
+      "expected": "⠭⠰⠁",
+      "rule": "14.4.1, example 14-7",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "\\frac{1}{3}",
+      "actual": "⠹⠂⠌⠒⠼",
+      "expected": "⠹⠂⠌⠒⠼",
+      "rule": "13.2.1, example 13-1",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "\\sqrt{x}",
+      "actual": "⠜⠭⠻",
+      "expected": "⠜⠭⠻",
+      "rule": "16.1.1",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "\\alpha",
+      "actual": "⠨⠁",
+      "expected": "⠨⠁",
+      "rule": "2, 6.1.4",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "-1",
+      "actual": "⠤⠼⠂",
+      "expected": "⠤⠼⠂",
+      "rule": "3-11",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "x_1",
+      "actual": "⠭⠂",
+      "expected": "⠭⠂",
+      "rule": "14-36",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "x^2+1",
+      "actual": "⠭⠘⠆⠐⠬⠂",
+      "expected": "⠭⠘⠆⠐⠬⠂",
+      "rule": "14-64",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "x^2=y^2",
+      "actual": "⠭⠘⠆ ⠨⠅ ⠽⠘⠆",
+      "expected": "⠭⠘⠆ ⠨⠅ ⠽⠘⠆",
+      "rule": "14-91",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "x_a^n",
+      "actual": "⠭⠰⠁⠘⠝",
+      "expected": "⠭⠰⠁⠘⠝",
+      "rule": "14-121",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "{x_1}^2",
+      "actual": "⠭⠂⠐⠘⠆",
+      "expected": "⠭⠂⠐⠘⠆",
+      "rule": "14-128",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "1+x+y=0",
+      "actual": "⠼⠂⠬⠭⠬⠽ ⠨⠅ ⠼⠴",
+      "expected": "⠼⠂⠬⠭⠬⠽ ⠨⠅ ⠼⠴",
+      "rule": "3-14",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "3*4",
+      "actual": "⠼⠒⠈⠼⠼⠲",
+      "expected": "⠼⠒⠈⠼⠼⠲",
+      "rule": "3-36",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "3+-4",
+      "actual": "⠼⠒⠬⠐⠤⠲",
+      "expected": "⠼⠒⠬⠐⠤⠲",
+      "rule": "24-9",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "(a,b,c)",
+      "actual": "⠷⠁⠠ ⠃⠠ ⠉⠾",
+      "expected": "⠷⠁⠠ ⠃⠠ ⠉⠾",
+      "rule": "6.4.5",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "(1,2)",
+      "actual": "⠷⠂⠠ ⠆⠾",
+      "expected": "⠷⠂⠠ ⠆⠾",
+      "rule": "3.5.2",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "\\frac{1}{x^2}",
+      "actual": "⠹⠂⠌⠭⠘⠆⠐⠼",
+      "expected": "⠹⠂⠌⠭⠘⠆⠐⠼",
+      "rule": "14-97",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "\\frac{\\frac{1}{2}}{3}",
+      "actual": "⠠⠹⠹⠂⠌⠆⠼⠠⠌⠒⠠⠼",
+      "expected": "⠠⠹⠹⠂⠌⠆⠼⠠⠌⠒⠠⠼",
+      "rule": "13.6",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "\\sqrt[3]{2}",
+      "actual": "⠣⠒⠜⠆⠻",
+      "expected": "⠣⠒⠜⠆⠻",
+      "rule": "16-10",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "\\sqrt{x^2+y^2}",
+      "actual": "⠜⠭⠘⠆⠐⠬⠽⠘⠆⠐⠻",
+      "expected": "⠜⠭⠘⠆⠐⠬⠽⠘⠆⠐⠻",
+      "rule": "16-4",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "\\Sigma",
+      "actual": "⠨⠠⠎",
+      "expected": "⠨⠠⠎",
+      "rule": "6-1",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "\\mathbb{R}",
+      "actual": "⠠⠸⠰⠠⠗",
+      "expected": "⠠⠸⠰⠠⠗",
+      "rule": "7-2",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "\\cos^2 x",
+      "actual": "⠉⠕⠎⠘⠆ ⠭",
+      "expected": "⠉⠕⠎⠘⠆ ⠭",
+      "rule": "18-8",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "\\int_a^b f(x)dx",
+      "actual": "⠮⠰⠁⠘⠃⠐⠋⠷⠭⠾⠙⠭",
+      "expected": "⠮⠰⠁⠘⠃⠐⠋⠷⠭⠾⠙⠭",
+      "rule": "23-16",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "x^{\\prime\\prime}_1",
+      "actual": "⠭⠄⠄⠂",
+      "expected": "⠭⠄⠄⠂",
+      "rule": "14.12, 14.6",
+      "passed": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "\\sum_{n=1}^\\infty\\frac{1}{2^n}",
+      "actual": "⠐⠨⠠⠎⠩⠝ ⠨⠅ ⠼⠂⠣⠠⠿⠻⠹⠂⠌⠆⠘⠝⠐⠼",
+      "expected": "⠐⠨⠠⠎⠩⠝ ⠨⠅ ⠼⠂⠣⠠⠿⠻⠹⠂⠌⠆⠘⠝⠐⠼",
+      "rule": "15-37",
+      "passed": true,
+      "display": true
+    },
+    {
+      "group": "math_nemeth",
+      "source": "\\sqrt[\\sum_{i=1}^n]{x}",
+      "actual": "⠣⠨⠠⠎⠰⠊ ⠰⠨⠅ ⠼⠂⠘⠝⠐⠜⠭⠻",
+      "expected": "⠣⠨⠠⠎⠰⠊ ⠰⠨⠅ ⠼⠂⠘⠝⠐⠜⠭⠻",
+      "rule": "16.2; TeX root-index style",
+      "passed": true,
+      "display": true
+    }
+  ]
+}

@@ -77,12 +77,12 @@ class TestLatexToNemeth:
     def test_superscript(self):
         """上标。"""
         result = latex_to_nemeth('x^2')
-        assert '⠈' in result  # 上标指示符
+        assert result == '⠭⠘⠆'  # Rule 14-3: dots 45 + lower 2
 
     def test_subscript(self):
         """下标。"""
         result = latex_to_nemeth('x_1')
-        assert '⠁' in result  # 下标指示符 或类似结构
+        assert result == '⠭⠂'  # Rule 14-36: numeric subscript indicator omitted
 
     def test_sum(self):
         """求和。"""

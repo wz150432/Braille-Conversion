@@ -3,6 +3,8 @@
 > 基于设计文档 `docs/superpowers/specs/2026-06-20-braille-converter-design.md`
 > 日期：2026-07-27
 
+> 本文保留初始实现计划。2026-10-09 中文转写已改用独立规范规则层和三种模式，当前行为以 [中文转写说明](chinese-braille.md) 为准。
+
 ## 阶段概览
 
 | 阶段 | 内容 | 预估文件数 |

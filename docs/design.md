@@ -12,7 +12,7 @@
 | 组件 | 技术 |
 |------|------|
 | GUI 框架 | PySide6 (Qt for Python) |
-| 中文→盲文 | pypinyin >= 0.55.0（Style.BRAILLE_MAINLAND / BRAILLE_MAINLAND_TONE） |
+| 中文→盲文 | pypinyin 本调读音 + jieba 候选词界 + 项目内 GF 0019—2018 规则层 |
 | 英文 Grade 2 → 盲文 | liblouis C 库（ctypes 按平台加载动态库） |
 | LaTeX 数学→Nemeth Code | 自研模块（基于 Nemeth Code 规则表） |
 | 打包分发 | PyInstaller（--onefile --windowed） |
@@ -22,7 +22,9 @@
 
 - 中文盲文：GF 0019-2018《国家通用盲文方案》（2018-07-01 施行）
 - 英文盲文：UEB（Unified English Braille），通过 liblouis 实现
-- 数学盲文：**Nemeth Code**（国际上最通用的数学盲文标准，中国盲校普遍采用）
+- 数学盲文：现有 **Nemeth Code** 模块；不能将其当作中国盲文数学规范的实现
+
+中文规则、支持范围和人工校订接口以 [中文转写说明](chinese-braille.md) 为准。自动候选分词和读音不能保证专业翻印质量。
 
 ## 二、整体架构
 
@@ -36,7 +38,9 @@ main.py  (入口：启动 QApplication)
    │
    ├── src/converter/          (盲文转换核心，不依赖 GUI)
    │   ├── braille_converter.py — 中/英/数学分流调度器
-   │   ├── chinese_conv.py     — pypinyin → 盲文点阵
+   │   ├── chinese_conv.py     — 本调读音与连写单位转写，人工校订接口
+   │   ├── chinese_rules.py    — 点位、标调、省写、简写、中文标点
+   │   ├── chinese_segmentation.py — 候选分词与规范原例校订
    │   ├── english_conv.py     — liblouis → 盲文 (Grade 2)
    │   └── math_conv.py        — LaTeX 数学 → Nemeth Code
    │
@@ -66,11 +70,12 @@ flowchart LR
 
 ### 3.1 中文盲文转换（ChineseConv）
 
-1. 使用 pypinyin 将汉字转为拼音 + 声调
-2. 拼音拆解为声母/韵母/声调
-3. 声母、韵母分别映射到 Braille 点阵（pypinyin 内置映射）
-4. 声调标记按 GF 0019-2018 规则附加
-5. 支持 `Style.BRAILLE_MAINLAND`（无调）和 `Style.BRAILLE_MAINLAND_TONE`（带调）
+1. 形成候选连写单位；可通过 `ChineseWord` 指定人工校订的词界
+2. 使用 pypinyin 获取逐字本调；允许人工指定多音字读音
+3. 按 GF 0019—2018 第 5–9 条处理点位和拼写
+4. 按第 10–11 条处理省写、保调、定字简写及词内例外
+5. 支持 `standard`、`tone_reduced`、`full` 三种模式，默认按规则省写与简写
+6. 使用中文标点表，词间空一方；语境和出版版式仍需专业编校
 
 ### 3.2 英文 Grade 2 转换（EnglishConv）
 
@@ -80,22 +85,16 @@ flowchart LR
 
 ### 3.3 LaTeX 数学 → Nemeth Code（MathConv）
 
-数学片段用 `$...$`（行内）或 `$$...$$`（独立段落）标记。转换流程：
+数学片段支持 `$...$`、`$$...$$`、`\(...\)`、`\[...\]` 及已有公式环境识别。实现采用“分词 → 结构树 → Nemeth 状态转写”的流程，依据 BANA Nemeth 2022 的明确支持范围。
 
-1. **检测** — 正则匹配 `\$[^$]+\$` 和 `\$\$[^$]+\$\$` 提取数学表达式
-2. **解析** — 分词解析 LaTeX 结构（命令、花括号分组、上下标、分式）
-3. **转换** — 按 Nemeth Code 规则逐元素映射：
+- 数字使用下位点，按上下文决定数字指示符；比较符两侧留空。
+- 上标为 ⠘（dots 45），下标为 ⠰（dots 56）；处理数字下标省写、同时上下标顺序、嵌套层级和基线恢复。
+- 分数为 ⠹ / ⠌ / ⠼，根式为 ⠜ / ⠻；嵌套结构标明阶数。
+- 保留希腊字母和明确字体类别，处理函数名、撇号与括号列表。
+- 依据行内/独立公式及 `\limits` / `\nolimits` 选择上下限位置；总转换入口加数学切换符。
+- 未支持或格式错误的完整公式返回 ⠿ 并记录原因。
 
-| LaTeX | Nemeth Code 说明 |
-|-------|------------------|
-| `\sum_{i=1}^{n}` | Nemeth 求和符号 + 下标 `i` + 等号 `1` + 上标 `n` |
-| `\int_{a}^{b}` | Nemeth 积分符号 + 下标/上标区间 |
-| `\frac{a}{b}` | 分式起始符 → `a` → 分式线 → `b` → 分式结束符 |
-| 上下标 `^` / `_` | Nemeth 上标指示符 (dot 4 ⠈) / 下标指示符 (dot 1 ⠁) |
-| 希腊字母 `\alpha` | 对应的 Nemeth 字母符号 |
-| `\sqrt{x}` | 根号起始符 → `x` → 根号结束符 |
-
-Nemeth Code 数字前加 ⠼（numeric indicator），字母保持原样。
+支持范围、条款及局限见 [数学转写说明](math-braille.md)。矩阵、多行对齐、连分数空间排版及专业公式断行尚未实现。
 
 ### 3.4 内容类型识别
 
@@ -154,7 +153,7 @@ Paginator(braille_chars: list[str], chars_per_line: int, lines_per_page: int)
 | 窗口缩放 | 画布重排 + 重新分页，保持当前阅读位置 |
 | liblouis 表缺失 | 降级仅用英文规则，记录日志警告 |
 | 打包后资源路径 | 通过 sys._MEIPASS 处理路径兼容 |
-| 数学表达式内的中英文 | 数学模式下只处理 LaTeX 数学符号，嵌套文本视为常量 |
+| 数学表达式内的中英文 | 公式内文本命令尚不支持，返回复核标记并记录原因 |
 | 非标准/自定义 LaTeX 宏 | 降级为 ⠿ 盲文占位符，避免输出非盲文字符 |
 
 ## 七、项目文件结构
